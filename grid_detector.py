@@ -5,10 +5,12 @@ import vectoriser
 import sys
 from collections import Counter
 
-def extract_grid(filename):
+def extract_grid(img):
 
     # maybe we should scale this to a particular size.
-    img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
+    #img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
     height, width = img.shape[:2]
 
     new_width = 800
@@ -38,8 +40,7 @@ def extract_grid(filename):
     #img = cv2.erode(img, kernel)
 
     # find all the contours
-    img, contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     #contoured_img = cv2.drawContours(original_img, contours, -1, (255,255,255), 5)
     #write_img(contoured_img, "hi.jpg")
 
@@ -79,10 +80,13 @@ def extract_grid(filename):
     MAX_DIMENSION = 28 * 9 * 4
 
     output_points = numpy.float32([[0, 0], [MAX_DIMENSION, 0], [MAX_DIMENSION, MAX_DIMENSION], [0, MAX_DIMENSION]])
-    transform = cv2.getPerspectiveTransform(input_points, output_points)
+    try:
+        transform = cv2.getPerspectiveTransform(input_points, output_points)
 
-    # get only the grid! :O
-    img = cv2.warpPerspective(original_img, transform, (MAX_DIMENSION, MAX_DIMENSION))
+        # get only the grid! :O
+        img = cv2.warpPerspective(original_img, transform, (MAX_DIMENSION, MAX_DIMENSION))
+    except:
+        pass
     return img
 
 
@@ -245,9 +249,7 @@ def predict_vector_2(x, y, img, classifier):
         return ' '
 
 
-def print_predicted_grid(img, detector):
-    classifier = vectoriser.get_trained_classifier("./data/mydata/")
-
+def print_predicted_grid(img, classifier):
     for row in xrange(9):
         rowwww = []
         for column in xrange(9):
@@ -326,13 +328,29 @@ def remove_grid(img, line_length):
     gridless_img = img - (v_lines + h_lines)
     return gridless_img
 
-img = extract_grid('./puzzles/testing/sudoku{}.jpg'.format(sys.argv[1]))
 
-detector = get_blob_detector()
-img = process_image_for_blob_detection(img)
+#detector = get_blob_detector()
+#img = extract_grid('./puzzles/testing/sudoku{}.jpg'.format(sys.argv[1]))
+#img = process_image_for_blob_detection(img)
+
+
+cam = cv2.VideoCapture(0)
+
+while True:
+    val, cam_img = cam.read()
+    img = extract_grid(cam_img)
+
+    cv2.imshow('webcam', cam_img)
+    cv2.imshow('grid', img)
+    if cv2.waitKey(1) == 27: #esc
+        break
+
+cv2.destroyAllWindows()
+
 img_copy = img.copy()
 #keypoints = detector.detect(img)
-print_predicted_grid(img, detector)
+classifier = vectoriser.get_trained_classifier("./data/mydata/")
+print_predicted_grid(img, classifier)
 
 #import ipdb; ipdb.set_trace()
 #img = cv2.drawContours(original_img, [container], 0, (255,255,255), 10)
