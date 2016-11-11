@@ -374,7 +374,7 @@ while True:
     val, cam_img = cam.read()
     img = extract_grid(cam_img)
     grid_img = img.copy()
-    cv2.imshow('webcam', cam_img)
+
     #cv2.imshow('grid', img)
     img = process_image_for_blob_detection(img)
     grid = print_predicted_grid(img, classifier)
@@ -387,7 +387,18 @@ while True:
     except:
         pass
 
-    cv2.imshow('processed_grid', grid_img)
+
+    height_1, width_1 = cam_img.shape[:2]
+    height_2, width_2 = grid_img.shape[:2]
+
+    new_width = width_1 + width_2
+    new_height = max((height_1, height_2))
+    full_img = numpy.zeros((new_height, new_width, 3), dtype='uint8')
+    full_img[0:height_1, 0:width_1, :] = cam_img
+    grid_img = cv2.cvtColor(grid_img, cv2.COLOR_GRAY2BGR)
+
+    full_img[0:height_2, width_1:, :] = grid_img
+    cv2.imshow('derp', full_img)
 
     waitkey = cv2.waitKey(1)
     if waitkey == 27: #esc
