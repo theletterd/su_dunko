@@ -5,6 +5,7 @@ import vectoriser
 import sys
 from collections import Counter
 
+
 def extract_grid(img):
 
     # maybe we should scale this to a particular size.
@@ -18,12 +19,11 @@ def extract_grid(img):
     new_height = int(height * factor)
 
     img = cv2.resize(img, (new_width, new_height))
-
     ## lets take 5 px off all sides
     #img = img[5:-5, 5:-5]
     original_img = img.copy()
 
-    img = cv2.blur(img, (8, 8))
+    #img = cv2.blur(img, (4, 4))
 
     # threshold image
     img = cv2.adaptiveThreshold(
@@ -31,8 +31,8 @@ def extract_grid(img):
         255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY,
-        11,
-        2
+        101,
+        3
     )
 
     #write_img(img)
@@ -41,7 +41,7 @@ def extract_grid(img):
 
     # find all the contours
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #contoured_img = cv2.drawContours(original_img, contours, -1, (255,255,255), 5)
+    #img = cv2.drawContours(original_img, contours, -1, (255,255,255), 5)
     #write_img(contoured_img, "hi.jpg")
 
 
@@ -64,7 +64,8 @@ def extract_grid(img):
         container = cv2.approxPolyDP(container, epsilon, True)
         if len(container) == 4:
             break
-
+#    import ipdb; ipdb.set_trace()
+#    sys.exit()
     # there's a better way of doing this, I'm sure.
     points = []
     for point in container:
@@ -82,11 +83,11 @@ def extract_grid(img):
     output_points = numpy.float32([[0, 0], [MAX_DIMENSION, 0], [MAX_DIMENSION, MAX_DIMENSION], [0, MAX_DIMENSION]])
     try:
         transform = cv2.getPerspectiveTransform(input_points, output_points)
-
         # get only the grid! :O
         img = cv2.warpPerspective(original_img, transform, (MAX_DIMENSION, MAX_DIMENSION))
     except:
         pass
+
     return img
 
 
@@ -143,7 +144,7 @@ def process_image_for_blob_detection(img):
 
     factor = 4
     inverted_img = cv2.resize(inverted_img, (28 * 9 * factor, 28 * 9 * factor))
-    inverted_img = remove_grid(inverted_img, 28 * 4 * factor)
+    inverted_img = remove_grid(inverted_img, 28  * factor)
     inverted_img = cv2.morphologyEx(inverted_img, cv2.MORPH_OPEN, kernel)
     inverted_img = cv2.resize(inverted_img, (28 * 9, 28 * 9))
     kernel = numpy.ones((2, 2))
@@ -250,13 +251,23 @@ def predict_vector_2(x, y, img, classifier):
 
 
 def print_predicted_grid(img, classifier):
+    rows = []
     for row in xrange(9):
         rowwww = []
         for column in xrange(9):
             #rowwww.append(predict_vector(row, column, img, detector, classifier))
             rowwww.append(predict_vector_2(row, column, img, classifier))
-        print ' '.join(rowwww)
+        rows.append(rowwww)
+        #print ' '.join(rowwww)
 
+
+    # ok now let's convert the grid to something we can feed into the solver.
+    derp = lambda x: int(x) if x is not ' ' else 0
+    integer_rows = [
+        [derp(x) for x in row] for row in rows
+    ]
+
+    return integer_rows
 
 def write_img(img, filename="hi.jpg"):
     cv2.imwrite(filename, img)
@@ -264,12 +275,13 @@ def write_img(img, filename="hi.jpg"):
 #def write_vector_to_file(digit, vector):
 
 def contains_number(img):
-    img, contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return None
     max_contour = max(contours, key=lambda x: cv2.contourArea(x))
     if cv2.contourArea(max_contour) < 10:
         return None
+
 
     # ok, so now we get the rectangle... and scale it.
     x, y, w, h = cv2.boundingRect(max_contour)
@@ -289,7 +301,12 @@ def contains_number(img):
     transform = cv2.getPerspectiveTransform(input_points, output_points)
     new_vector = cv2.warpPerspective(img, transform, (28, 28))
 
-    return new_vector * 255
+    new_vector *= 255
+
+    if numpy.mean(new_vector) > 160:
+        return None
+
+    return new_vector
 
 
 def write_vectors(image):
@@ -334,23 +351,53 @@ def remove_grid(img, line_length):
 #img = process_image_for_blob_detection(img)
 
 
+def write_solution_onto_img(img, grid, solution):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    height, width = img.shape[:2]
+    cell_size = height / 9
+    offset = (cell_size / 4)
+    for x in xrange(9):
+        for y in xrange(9):
+            if grid[x][y] == 0 and solution[x][y] != None:
+                answer = str(solution[x][y].final_value)
+                x_coordinate = ((x + 1)  * cell_size) - offset
+                y_coordinate = (y  * cell_size) + offset
+                cv2.putText(img, answer, (y_coordinate,x_coordinate), font, 2, 255, 5)
+    return img
+
+from solver import Board
 cam = cv2.VideoCapture(0)
+classifier = vectoriser.get_trained_classifier("./data/mydata/")
 
 while True:
     val, cam_img = cam.read()
     img = extract_grid(cam_img)
-
+    grid_img = img.copy()
     cv2.imshow('webcam', cam_img)
-    cv2.imshow('grid', img)
-    if cv2.waitKey(1) == 27: #esc
+    #cv2.imshow('grid', img)
+    img = process_image_for_blob_detection(img)
+    grid = print_predicted_grid(img, classifier)
+
+    board = Board(grid)
+    try:
+        if board.solve(verbose=False):
+            grid_img = write_solution_onto_img(grid_img, grid, board)
+    except:
+        pass
+
+    cv2.imshow('processed_grid', grid_img)
+
+    waitkey = cv2.waitKey(1)
+    if waitkey == 27: #esc
         break
+    if waitkey == 119: #esc
+        write_vectors(img)
 
 cv2.destroyAllWindows()
 
 img_copy = img.copy()
 #keypoints = detector.detect(img)
-classifier = vectoriser.get_trained_classifier("./data/mydata/")
-print_predicted_grid(img, classifier)
+
 
 #import ipdb; ipdb.set_trace()
 #img = cv2.drawContours(original_img, [container], 0, (255,255,255), 10)
