@@ -55,7 +55,7 @@ def get_trained_classifier(directory):
         training_set.extend(training_samples)
 
     training_vectors, training_labels = zip(*training_set) # heh, hack
-    classifier = svm.SVC(kernel='poly', decision_function_shape='ovr')
+    classifier = svm.SVC(kernel='poly', decision_function_shape='ovo')
     print "training..."
     classifier.fit(training_vectors, training_labels)
     return classifier

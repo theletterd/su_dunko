@@ -40,6 +40,8 @@ class Cell(object):
     def process(self):
         self._update_possibilities()
         self._check_loneliness()
+        if not self.final_value and len(self.remaining_values) == 1:
+            self.final_value = self.remaining_values.pop()
 
     def _update_possibilities(self):
         if self.final_value:
@@ -180,7 +182,6 @@ class Board(object):
             all_equal = row_values == column_values == square_values == {1, 2, 3, 4, 5, 6, 7, 8, 9}
             if not all_equal:
                 return False
-
         return True
 
     @property
@@ -206,7 +207,7 @@ class Board(object):
             if state_0 == state_1:
                 if self.solved:
                     if self.is_valid:
-                        return True
+                        return self
 
                     return False
 
@@ -227,7 +228,7 @@ class Board(object):
                         print self
                     result = new_board.solve(verbose=verbose, recursion_level=recursion_level+1)
                     if result:
-                        return True
+                        return result
                 return False
 
 

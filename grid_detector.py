@@ -356,9 +356,10 @@ def write_solution_onto_img(img, grid, solution):
     height, width = img.shape[:2]
     cell_size = height / 9
     offset = (cell_size / 4)
+
     for x in xrange(9):
         for y in xrange(9):
-            if grid[x][y] == 0 and solution[x][y] != None:
+            if grid[x][y] == 0 and solution[x][y].final_value != None:
                 answer = str(solution[x][y].final_value)
                 x_coordinate = ((x + 1)  * cell_size) - offset
                 y_coordinate = (y  * cell_size) + offset
@@ -380,8 +381,9 @@ while True:
 
     board = Board(grid)
     try:
-        if board.solve(verbose=False):
-            grid_img = write_solution_onto_img(grid_img, grid, board)
+        solution = board.solve(verbose=False)
+        if solution:
+            grid_img = write_solution_onto_img(grid_img, grid, solution)
     except:
         pass
 
