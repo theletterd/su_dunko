@@ -200,7 +200,7 @@ def get_vector_by_coords(x, y, image):
 
 
 def print_vector(vector):
-    print vectoriser.print_vector(vector.astype('uint8'))
+    print(vectoriser.print_vector(vector.astype('uint8')))
 
 
 def predict_vector(x, y, img, detector, classifier):
@@ -214,7 +214,6 @@ def predict_vector(x, y, img, detector, classifier):
         # we need to find the closest point which has a non-zero value.
         # stupid.
         mask = numpy.zeros((30, 30), numpy.uint8)
-        old_vector = vector.copy()
         _, _, _, rect = cv2.floodFill(vector, mask,  point, 255)
 
         input_points = numpy.float32([
@@ -252,9 +251,9 @@ def predict_vector_2(x, y, img, classifier):
 
 def print_predicted_grid(img, classifier):
     rows = []
-    for row in xrange(9):
+    for row in range(9):
         rowwww = []
-        for column in xrange(9):
+        for column in range(9):
             #rowwww.append(predict_vector(row, column, img, detector, classifier))
             rowwww.append(predict_vector_2(row, column, img, classifier))
         rows.append(rowwww)
@@ -310,8 +309,8 @@ def contains_number(img):
 
 
 def write_vectors(image):
-    for i in xrange(9):
-        for j in xrange(9):
+    for i in range(9):
+        for j in range(9):
             vector = get_vector_by_coords(i, j, image)
             new_vector = contains_number(vector)
             if new_vector != None:
@@ -357,8 +356,8 @@ def write_solution_onto_img(img, grid, solution):
     cell_size = height / 9
     offset = (cell_size / 4)
 
-    for x in xrange(9):
-        for y in xrange(9):
+    for x in range(9):
+        for y in range(9):
             if grid[x][y] == 0 and solution[x][y].final_value != None:
                 answer = str(solution[x][y].final_value)
                 x_coordinate = ((x + 1)  * cell_size) - offset

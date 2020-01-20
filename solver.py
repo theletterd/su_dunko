@@ -165,7 +165,7 @@ class Board(object):
                 guesses = cell.remaining_values
 
         if not guesses:
-            print "wtf"
+            print("wtf")
             raise AssertionError
 
         return row, column, guesses
@@ -195,7 +195,7 @@ class Board(object):
             raise Exception
         while True:
             if verbose:
-                print self
+                print(self)
 
             state_0 = self.state
 
@@ -213,7 +213,7 @@ class Board(object):
 
                 if self.reached_contradiction:
                     if verbose:
-                        print "contradiction found."
+                        print("contradiction found.")
                     return False
 
                 # stalemate, then - need to make a guess.
@@ -224,8 +224,8 @@ class Board(object):
 
                     new_board = Board(basic_representation)
                     if verbose:
-                        print "Making assumption: row={row}, col={col}, value={guess}...".format(row=row, col=column, guess=guess)
-                        print self
+                        print("Making assumption: row={row}, col={col}, value={guess}...".format(row=row, col=column, guess=guess))
+                        print(self)
                     result = new_board.solve(verbose=verbose, recursion_level=recursion_level+1)
                     if result:
                         return result

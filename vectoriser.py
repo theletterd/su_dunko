@@ -1,6 +1,5 @@
 import numpy
 from sklearn import svm
-from sklearn.preprocessing import normalize
 import random
 
 # file contains 1000 samples of 28 * 28 bytes each.
@@ -50,13 +49,13 @@ def print_vector(vector):
 
 def get_trained_classifier(directory):
     training_set = []
-    for digit in xrange(1, 10): # 1-9
+    for digit in range(1, 10): # 1-9
         training_samples, _ = get_test_training_samples(digit, percentage_training=1.0, directory=directory)
         training_set.extend(training_samples)
 
     training_vectors, training_labels = zip(*training_set) # heh, hack
     classifier = svm.SVC(kernel='poly', decision_function_shape='ovo')
-    print "training..."
+    print("training...")
     classifier.fit(training_vectors, training_labels)
     return classifier
 
@@ -64,17 +63,17 @@ def test_classifier():
     training_set = []
     test_set = []
 
-    for digit in xrange(10): # 0-9
+    for digit in range(10): # 0-9
         training_samples, test_samples = get_test_training_samples(digit)
         training_set.extend(training_samples)
         test_set.extend(test_samples)
 
     training_vectors, training_labels = zip(*training_set) # heh, hack
     classifier = svm.SVC(kernel='poly', decision_function_shape='ovo')
-    print "training..."
+    print("training...")
     classifier.fit(training_vectors, training_labels)
     test_vectors, test_labels = zip(*test_set)
-    print "testing..."
+    print("testing...")
     score = classifier.score(test_vectors, test_labels)
     import ipdb; ipdb.set_trace()
     return score
